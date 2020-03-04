@@ -9,9 +9,6 @@ Vue.use(BootstrapVue)
 Vue.use(IconsPlugin)
 
 new Vue({
-  data: {
-    userNumber: '777'
-  },
   render: h => h(App),
 }).$mount('#app')
 
