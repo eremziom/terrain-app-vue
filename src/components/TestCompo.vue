@@ -8,13 +8,21 @@
         <div v-show="userNumber.length > 8" class="row justify-content-center ">Numer posiada za duzo cyfr!</div>
         <div v-show="numberNotVerified === true" class="row justify-content-center ">Numer nie został poprawnie zweryfikowany</div>
         <div v-show="numberVerified == true" class="row justify-content-center ">Numer abonenta <span class="verifiedNumber">{{userNumber}}</span> jest poprawny</div>
-        <div v-show="numberVerified == true" class="row justify-content-center "><b-button class="mediaButton">INTERNET / TELEFON</b-button></div>
-        <div v-show="numberVerified == true" class="row justify-content-center "><b-button class="mediaButton">TELEWIZJA</b-button></div>
-        <div v-show="numberVerified == true" class="row justify-content-center "><b-button class="mediaButton">DYSK HDD</b-button></div>
+        <div v-show="numberVerified == true && categoryChosen == false" class="row justify-content-center "><b-button class="mediaButton" v-on:click="showInputs('intFon')">INTERNET / TELEFON</b-button></div>
+        <div v-show="numberVerified == true && categoryChosen == false" class="row justify-content-center "><b-button class="mediaButton" v-on:click="showInputs('tv')">TELEWIZJA</b-button></div>
+        <div v-show="numberVerified == true && categoryChosen == false" class="row justify-content-center "><b-button class="mediaButton" v-on:click="showInputs('hdd')">DYSK HDD</b-button></div>
+        <!-- <div v-show="info != null" class="row justify-content-center "><span class="verifiedNumber">{{info}}</span></div>
+        <div v-if="info != null" class="row justify-content-center "><span>{{info.USD.rate_float}}</span></div> -->
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" class="row justify-content-center nrInput"><b-form-input id="ident1" placeholder="ID Urządzenia"></b-form-input></div>
+        <div v-show="devices.tv == true" class="row justify-content-center nrInput"><b-form-input id="ident2" placeholder="ID Drugiego Urządzenia"></b-form-input></div>
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" class="row justify-content-center "><b-button class="nrButton" >WERYFIKUJ</b-button></div>
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" class="row justify-content-center "><b-button class="backButton" v-on:click="goBack">WRÓĆ</b-button></div>
     </div>
 </template>
 
 <script>
+// import axios from 'axios';
+
 export default {
     name: 'TestCompo',
     props: {
@@ -28,7 +36,25 @@ export default {
             }  else {
                 this.numberNotVerified = true;
             }
+        },
+        showInputs: function(device){
+            this.devices[device] = true;
+            this.categoryChosen = true;
+        },
+        goBack: function(){
+            this.devices.tv = false;
+            this.devices.intFon = false;
+            this.devices.hdd = false;
+            this.categoryChosen = false;
         }
+        // postToApi: function(){
+        //     axios
+        //         .get('https://api.coindesk.com/v1/bpi/currentprice.json')
+        //         .then(response => (this.info = response.data.bpi))
+        //         .catch(e => {
+        //             this.error = e
+        //         })
+        // }
     },
     data: function() {
         return {
@@ -37,6 +63,13 @@ export default {
             incorrect: 'incorrect',
             numberVerified: false,
             numberNotVerified: false,
+            categoryChosen: false,
+            //info: null,
+            devices: {
+                tv: false,
+                intFon: false,
+                hdd: false
+            },
         }
     }
 }
@@ -74,10 +107,10 @@ export default {
             border: none;
         }
     }
-    .btn-secondary:not(:disabled):not(.disabled):active {
-        background-color: rgb(10, 78, 10);
-        border: none;
-    }
+    // .btn-secondary:not(:disabled):not(.disabled):active {
+    //     background-color: rgb(10, 78, 10);
+    //     border: none;
+    // }
     .mediaButton {
         height: 150px;
         width: 90%;
@@ -97,6 +130,16 @@ export default {
         &:active{
             background-color: green;
             border: none;
+        }
+    }
+    .backButton{
+        margin: 10px;
+        width: 90%;
+        height: 100px;
+        font-size: 40px;
+        background-color: darkblue;
+        &:hover{
+            background-color: rgb(1, 1, 63);
         }
     }
 

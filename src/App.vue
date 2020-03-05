@@ -20,6 +20,9 @@ export default {
 </script>
 
 <style lang="scss">
+body{
+  background-color: darkslategray !important;
+}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -35,4 +38,5 @@ export default {
     height: 150px;
   }
 }
+
 </style>
