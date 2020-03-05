@@ -1,16 +1,17 @@
 <template>  
     <div class="container-fluid cont">
+
         <!-- Header (TOYA SP. Z O.O.) -->
         <div v-show="numberVerified == false" v-bind:class="mainClass"><h2>{{testProp}}</h2></div>
 
         <!-- Customer ID Input -->
         <div v-show="numberVerified == false" v-bind:class="[userNumber.length === 8 ? correct : incorrect, mainClass]" class="nrInput"><b-form-input v-model="userNumber" id="nrAbonenta" type="number" placeholder="Numer Abonenta"></b-form-input></div>
-        <div v-show="numberVerified == false && userNumber.length === 8" class="row justify-content-center "><b-button class="nrButton" v-on:click="numberCheck">WERYFIKUJ</b-button></div>
+        <div v-show="numberVerified == false && userNumber.length === 8" class="row justify-content-center "><b-button class="nrButton" v-on:click="numberCheck">ZATWIERDŹ</b-button></div>
 
         <!-- Customer ID Input Information Status -->
         <div v-show="userNumber.length === 0" v-bind:class="mainClass">Wpisz 8-cyfrowy numer abonenta</div>
-        <div v-show="userNumber.length < 8 && userNumber.length > 0" v-bind:class="mainClass">Numer posaida za mało cyfr!</div>
-        <div v-show="userNumber.length > 8" v-bind:class="mainClass">Numer posiada za duzo cyfr!</div>
+        <div v-show="userNumber.length < 8 && userNumber.length > 0" v-bind:class="mainClass">Numer posaida za mało cyfr</div>
+        <div v-show="userNumber.length > 8" v-bind:class="mainClass">Numer posiada za duzo cyfr</div>
         <div v-show="numberNotVerified === true" v-bind:class="mainClass">Numer nie został poprawnie zweryfikowany</div>
 
         <!-- Verified Customer ID Number -->
@@ -25,8 +26,8 @@
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
 
         <!-- Devices Numbers Inputs -->
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : placeholder"></b-form-input></div>
-        <div v-show="devices.tv == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident2" v-model="idDevice2" placeholder="ID Urządzenia"></b-form-input></div>
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)"></b-form-input></div>
+        <div v-show="devices.tv == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder"></b-form-input></div>
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
 
         <!-- Devices Posting Information Status -->
@@ -119,8 +120,10 @@ export default {
                 intFon: false,
                 hdd: false
             },
-            placeholder: 'ID Urządzenia',
-            placeholderKarta: 'ID Karty',
+            placeholderInternet: 'ID HFC / GPON',
+            placeholderKarta: 'ID Karty STB',
+            placeholderDysk: 'ID Dysku HDD',
+            placeholderDekoder: 'ID Urządzenia STB',
             idDevice1: '',
             idDevice2: '',
             addedDeviceNumber: 0,
