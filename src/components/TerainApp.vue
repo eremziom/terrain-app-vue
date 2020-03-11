@@ -1,6 +1,8 @@
 <template>  
     <div class="container-fluid cont">
 
+        <BarcodeReader v-bind:category="categoryChosen" />
+
         <!-- Header (TOYA SP. Z O.O.) -->
         <div v-show="numberVerified == false" v-bind:class="mainClass"><h2>{{testProp}}</h2></div>
 
@@ -41,10 +43,16 @@
 
 <script>
 //import axios from 'axios';
+import BarcodeReader from './BarcodeReader.vue'
+
 export default {
-    name: 'Terain_App',
+    
+    name: 'TerainApp',
     props: {
         testProp: String
+    },
+    components: {
+        BarcodeReader,
     },
     methods: {
         numberCheck: function(){

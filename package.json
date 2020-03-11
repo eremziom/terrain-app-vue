@@ -13,6 +13,7 @@
     "bootstrap-vue": "^2.5.0",
     "core-js": "^3.6.4",
     "node-sass": "^4.13.1",
+    "quagga": "^0.12.1",
     "vue": "^2.6.11"
   },
   "devDependencies": {
