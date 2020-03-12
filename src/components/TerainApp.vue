@@ -28,6 +28,7 @@
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
 
         <!-- Devices Numbers Inputs -->
+        <div @inputData="getFromChild"></div>
         <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)"></b-form-input></div>
         <div v-show="devices.tv == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder"></b-form-input></div>
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
@@ -55,6 +56,9 @@ export default {
         BarcodeReader,
     },
     methods: {
+        getFromChild: function(value){
+            console.log('!!!!!!!', value)
+        },
         numberCheck: function(){
             event.preventDefault();
             if(this.userNumber === this.userNumber){

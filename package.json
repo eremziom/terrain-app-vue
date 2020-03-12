@@ -1,6 +1,5 @@
 {
   "name": "vue_test",
-  "homepage": "https://eremziom.github.io/terrain-app-vue/public",
   "version": "0.1.0",
   "private": true,
   "scripts": {

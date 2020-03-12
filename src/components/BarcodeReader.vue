@@ -1,8 +1,8 @@
 <template>
     <div>
+        <div v-show="category == true"><b-form-input id='findInput' v-model="codeNumber"></b-form-input></div>
         <div v-show="category == true">
-            <video id="video" width="320" height="240" autoPlay></video>
-            <!-- <div id="scanner-container"></div> -->
+            <div id="scannerContainer" class="scannerContainer"></div>
         </div>
     </div>
 </template>
@@ -15,44 +15,30 @@ export default {
         category: Boolean,
     },
     updated() {
-        this.showCamera();
+        this.showLiveCamera();
+        
+    },
+    beforeUpdate(){
+        this.test();
     },
     methods: {
-        showCamera: async function(){
-
-            if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-                    var video = document.getElementById('video');
-                    video.srcObject = stream;
-                    video.play();
-                });
-            }   else {
-                console.log('nie dziala')
-            }
+        test: function(){
+            console.log('REREREDRBEBDE')
         },
         showLiveCamera: async function(){
             await Quagga.init({
                 inputStream: {
                     name: "Live",
                     type: "LiveStream",
-                    target: document.querySelector('#scanner-container'),
+                    target: document.getElementById('scannerContainer'),
                     constraints: {
-                        width: 640,
-                        height: 480,
-                        facingMode: "environment"
+                        width: 1024,
+                        height: 768,
+                        facingMode: "environment",
                     },
                 },
                 decoder: {
                     readers: [
-                      "code_128_reader",
-                      "ean_reader",
-                      "ean_8_reader",
-                      "code_39_reader",
-                      "code_39_vin_reader",
-                      "codabar_reader",
-                      "upc_reader",
-                      "upc_e_reader",
-                      "i2of5_reader",
                       "code_93_reader"
                     ],
                     //multiple: true,
@@ -72,6 +58,7 @@ export default {
             Quagga.onProcessed(function (result) {
                 var drawingCtx = Quagga.canvas.ctx.overlay,
                 drawingCanvas = Quagga.canvas.dom.overlay;
+                drawingCanvas.style.display = 'none';
 
                 if (result) {
                     if (result.boxes) {
@@ -97,22 +84,35 @@ export default {
             Quagga.onDetected(function (result) {
               if(result){
                 if(result.codeResult) {
-                  console.log("result", result.codeResult.code, result);
+                  this.codeNumber = result.codeResult.code;
+                  const findInput = document.getElementById('findInput');
+                  findInput.value = this.codeNumber;
                 }
                 else if(Array.isArray(result)){
-                  for(let number of result){
-                    console.log("resultssss ", number);
+                  for(let codeNumber of result){
+                    console.log("resultssss ", codeNumber);
+                    this.codeNumber = result.codeResult.code;
                     }
                 } else {
                     console.log("not detected", result);
+                    this.codeNumber = result.codeResult.code;
                 }
               }
             });
         },
-
     },
+    data: function() {
+        return {
+            codeNumber: '',
+        }
+    }
 }
 </script>
 
 <style lang="scss" scoped>
+    .scannerContainer {
+        .drawingBuffer {
+            display: none;
+        }
+    }
 </style>
