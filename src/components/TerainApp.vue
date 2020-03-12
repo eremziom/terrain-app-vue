@@ -1,8 +1,6 @@
 <template>  
     <div class="container-fluid cont">
 
-        <BarcodeReader v-bind:category="categoryChosen" />
-
         <!-- Header (TOYA SP. Z O.O.) -->
         <div v-show="numberVerified == false" v-bind:class="mainClass"><h2>{{testProp}}</h2></div>
 
@@ -28,9 +26,9 @@
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
 
         <!-- Devices Numbers Inputs -->
-        <div @inputData="getFromChild"></div>
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)"></b-form-input></div>
-        <div v-show="devices.tv == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder"></b-form-input></div>
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" v-on:focus="() => this.showCamera1(1)" autocomplete="false"></b-form-input></div>
+        <div v-show="devices.tv == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder" v-on:focus="() => this.showCamera2(2)" autocomplete="false"></b-form-input></div>
+        <div v-show="camera == true" id="scannerContainer" class="scannerContainer"></div>
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
 
         <!-- Devices Posting Information Status -->
@@ -44,20 +42,28 @@
 
 <script>
 //import axios from 'axios';
-import BarcodeReader from './BarcodeReader.vue'
+import Quagga from 'quagga';
 
 export default {
-    
     name: 'TerainApp',
     props: {
         testProp: String
     },
-    components: {
-        BarcodeReader,
+    mounted: function(){
+        
     },
     methods: {
-        getFromChild: function(value){
-            console.log('!!!!!!!', value)
+        showCamera1: function(){
+            this.deviceInput = 1;
+            this.camera = true;
+            this.showLiveCamera();
+
+        },
+        showCamera2: function(){
+            this.deviceInput = 2;
+            this.camera = true;
+            this.showLiveCamera();
+
         },
         numberCheck: function(){
             event.preventDefault();
@@ -80,11 +86,12 @@ export default {
             this.idDevice1 = '';
             this.deviceAdded = false;
             this.deviceAddError = false;
+            this.camera = false;
         },
         addDevice: async function(){
-            
             await this.preparePayload();
-
+            this.camera = false;
+            console.log(this.deviceInput);
             if((this.idDevice1 === this.idDevice1 && this.idDevice2 === this.idDevice2) || this.responseDataStatus === 1){
                 this.deviceAdded = true;
                 this.addedDeviceNumber += 1;
@@ -101,7 +108,88 @@ export default {
             }
             console.log(payload);
             //this.postToApi(payload);
-        }
+        },
+        showLiveCamera: async function(){
+            await Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.getElementById('scannerContainer'),
+                    constraints: {
+                        width: 1024,
+                        height: 768,
+                        facingMode: "environment",
+                    },
+                },
+                decoder: {
+                    readers: [
+                      "code_93_reader"
+                    ],
+                },
+            }, function (err) {
+                if (err) {
+                    console.log(err);
+                    return
+                }
+                console.log("Initialization finished. Ready to start");
+                Quagga.start();
+
+            });
+
+            Quagga.onProcessed(function (result) {
+                var drawingCtx = Quagga.canvas.ctx.overlay,
+                drawingCanvas = Quagga.canvas.dom.overlay;
+                drawingCanvas.style.display = 'none';
+
+                if (result) {
+                    if (result.boxes) {
+                        drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+                        result.boxes.filter(function (box) {
+                            return box !== result.box;
+                        }).forEach(function (box) {
+                            Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: "green", lineWidth: 2 });
+                        });
+                    }
+
+                    if (result.box) {
+                        Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: "#00F", lineWidth: 2 });
+                    }
+
+                    if (result.codeResult && result.codeResult.code) {
+                        Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: 'red', lineWidth: 3 });
+                    }
+                }
+            });
+
+
+            Quagga.onDetected(function (result) {
+              if(result){
+                if(result.codeResult) {
+                    
+                    console.log('!!!!!!!!!!');
+                  this.codeNumber = result.codeResult.code;
+                  const findInput = document.getElementById('ident1');
+                  const findInput2 = document.getElementById('ident2');
+                    if(this.deviceInput === 1){
+                        findInput.value = this.codeNumber;
+                    }   else if(this.deviceInput === 2){
+                    findInput2.value = this.codeNumber;
+                    }   else {
+                        findInput.value = this.codeNumber;
+                    }
+                }
+                // else if(Array.isArray(result)){
+                  
+                //     console.log("resultssss ", result);
+                //     //this.codeNumber = result.codeResult.code;
+                    
+                // } else {
+                //     console.log("not detected", result);
+                //     this.codeNumber = result.codeResult.code;
+                // }
+              }
+            });
+        },
         // postToApi: function(payload){
         //     axios
         //         .post('http://beta.csi.toya.net.pl/apps/bober/api/', payload)
@@ -139,6 +227,8 @@ export default {
             idDevice1: '',
             idDevice2: '',
             addedDeviceNumber: 0,
+            camera: false,
+            deviceInput: '',
         }
     }
 }
