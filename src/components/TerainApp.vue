@@ -26,8 +26,8 @@
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
 
         <!-- Devices Numbers Inputs -->
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" v-on:focus="() => this.showCamera1(1)" autocomplete="false"></b-form-input></div>
-        <div v-show="devices.tv == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder" v-on:focus="() => this.showCamera2(2)" autocomplete="false"></b-form-input></div>
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" v-on:focus="() => this.showCamera(1)" autocomplete="false"></b-form-input></div>
+        <div v-show="devices.tv == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder" v-on:focus="() => this.showCamera(2)" autocomplete="false"></b-form-input></div>
         <div v-show="camera == true" id="scannerContainer" class="scannerContainer"></div>
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
 
@@ -49,21 +49,11 @@ export default {
     props: {
         testProp: String
     },
-    mounted: function(){
-        
-    },
     methods: {
-        showCamera1: function(){
-            this.deviceInput = 1;
+        showCamera: function(arg){
             this.camera = true;
+            this.deviceInput = arg;
             this.showLiveCamera();
-
-        },
-        showCamera2: function(){
-            this.deviceInput = 2;
-            this.camera = true;
-            this.showLiveCamera();
-
         },
         numberCheck: function(){
             event.preventDefault();
@@ -91,7 +81,6 @@ export default {
         addDevice: async function(){
             await this.preparePayload();
             this.camera = false;
-            console.log(this.deviceInput);
             if((this.idDevice1 === this.idDevice1 && this.idDevice2 === this.idDevice2) || this.responseDataStatus === 1){
                 this.deviceAdded = true;
                 this.addedDeviceNumber += 1;
@@ -110,6 +99,7 @@ export default {
             //this.postToApi(payload);
         },
         showLiveCamera: async function(){
+            console.log('hello')
             await Quagga.init({
                 inputStream: {
                     name: "Live",
@@ -135,6 +125,8 @@ export default {
                 Quagga.start();
 
             });
+
+            let self = this;
 
             Quagga.onProcessed(function (result) {
                 var drawingCtx = Quagga.canvas.ctx.overlay,
@@ -165,28 +157,13 @@ export default {
             Quagga.onDetected(function (result) {
               if(result){
                 if(result.codeResult) {
-                    
-                    console.log('!!!!!!!!!!');
                   this.codeNumber = result.codeResult.code;
-                  const findInput = document.getElementById('ident1');
-                  const findInput2 = document.getElementById('ident2');
-                    if(this.deviceInput === 1){
-                        findInput.value = this.codeNumber;
-                    }   else if(this.deviceInput === 2){
-                    findInput2.value = this.codeNumber;
-                    }   else {
-                        findInput.value = this.codeNumber;
+                    if(self.deviceInput === 1){
+                    self.idDevice1 =  this.codeNumber;
+                    }   else if (self.deviceInput === 2){
+                        self.idDevice2 = this.codeNumber;
                     }
                 }
-                // else if(Array.isArray(result)){
-                  
-                //     console.log("resultssss ", result);
-                //     //this.codeNumber = result.codeResult.code;
-                    
-                // } else {
-                //     console.log("not detected", result);
-                //     this.codeNumber = result.codeResult.code;
-                // }
               }
             });
         },
