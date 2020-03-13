@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <img alt="Vue logo" src="./assets/logo.png">
-    <TerainApp testProp="TOYA Sp. Z o.o." />
+    <TerainApp testProp="Protokół odbioru" />
   </div>
 </template>
 
@@ -32,7 +32,9 @@ body{
   margin: 0;
   height: 100vh;
   img{
-    height: 150px;
+    max-height: 50px;
+    object-fit: cover;
+    margin-bottom: 50px;
   }
 }
 

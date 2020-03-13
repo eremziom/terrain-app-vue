@@ -26,8 +26,8 @@
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
 
         <!-- Devices Numbers Inputs -->
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" v-on:focus="() => this.showCamera(1)" autocomplete="false"></b-form-input></div>
-        <div v-show="devices.tv == true" v-bind:class="mainClass" class="nrInput"><b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder" v-on:focus="() => this.showCamera(2)" autocomplete="false"></b-form-input></div>
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[idDevice1.length === 11 ? correct : incorrect, mainClass]" class="nrInput"><b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" autocomplete="false" ></b-form-input><button class="cameraButton" v-on:click="() => this.showCamera(1)"><b-icon-camera class="icon" scale="2"></b-icon-camera></button></div>
+        <div v-show="devices.tv == true" v-bind:class="[idDevice2.length === 11 ? correct : incorrect, mainClass]" class="nrInput"><b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder" autocomplete="false"></b-form-input><button class="cameraButton" v-on:click="() => this.showCamera(2)"><b-icon-camera class="icon" scale="2"></b-icon-camera></button></div>
         <div v-show="camera == true" id="scannerContainer" class="scannerContainer"></div>
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
 
@@ -37,6 +37,7 @@
         
         <!-- Go Back Button -->
         <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBack">WRÓĆ</b-button></div>
+        <div v-show="numberVerified && !categoryChosen" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBackAbonent">WRÓĆ</b-button></div>
     </div>
 </template>
 
@@ -78,6 +79,9 @@ export default {
             this.deviceAddError = false;
             this.camera = false;
         },
+        goBackAbonent: function(){
+            this.numberVerified = false;
+        },
         addDevice: async function(){
             await this.preparePayload();
             this.camera = false;
@@ -99,7 +103,6 @@ export default {
             //this.postToApi(payload);
         },
         showLiveCamera: async function(){
-            console.log('hello')
             await Quagga.init({
                 inputStream: {
                     name: "Live",
@@ -218,9 +221,13 @@ export default {
         border: solid;
         border-width: 7px;
         border-radius: 10px;
+        display: flex;
+        flex-wrap: nowrap;
         input {
             text-align: center;
-            font-size: 30px;
+            font-size: 20px;
+            border-radius: 0;
+            height: 70px;
         }
     }
     .nrButton {
@@ -245,7 +252,7 @@ export default {
         }
     }
     .mediaButton {
-        height: 150px;
+        height: 100px;
         width: 90%;
         font-size: 40px;
         background-color: steelblue;
@@ -299,5 +306,11 @@ export default {
     .error{
         color: white;
         background-color: red;
+    }
+    .cameraButton{
+        background-color: green;
+        border-width: 5px;
+        border-color: darkgreen;
+        width: 60px;
     }
 </style>
