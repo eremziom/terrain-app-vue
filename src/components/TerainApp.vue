@@ -26,8 +26,20 @@
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
 
         <!-- Devices Numbers Inputs -->
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[idDevice1.length === 11 ? correct : incorrect, mainClass]" class="nrInput"><b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" autocomplete="false" ></b-form-input><button class="cameraButton" v-on:click="() => this.showCamera(1)"><b-icon-camera class="icon" scale="2"></b-icon-camera></button></div>
-        <div v-show="devices.tv == true" v-bind:class="[idDevice2.length === 11 ? correct : incorrect, mainClass]" class="nrInput"><b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder" autocomplete="false"></b-form-input><button class="cameraButton" v-on:click="() => this.showCamera(2)"><b-icon-camera class="icon" scale="2"></b-icon-camera></button></div>
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 ? correct : incorrect), mainClass]" class="nrInput">
+            <b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" autocomplete="false" >
+            </b-form-input>
+            <button class="cameraButton" v-on:click="() => this.showCamera(1)">
+                <b-icon-camera class="icon" scale="2"></b-icon-camera>
+            </button>
+        </div>
+        <div v-show="devices.tv == true" v-bind:class="[idDevice2.length === 11 ? correct : incorrect, mainClass]" class="nrInput">
+            <b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder" autocomplete="false">
+            </b-form-input>
+            <button class="cameraButton" v-on:click="() => this.showCamera(2)">
+                <b-icon-camera class="icon" scale="2"></b-icon-camera>
+            </button>
+        </div>
         <div v-show="camera == true" id="scannerContainer" class="scannerContainer"></div>
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
 
@@ -109,9 +121,15 @@ export default {
                     type: "LiveStream",
                     target: document.getElementById('scannerContainer'),
                     constraints: {
-                        width: 1024,
-                        height: 768,
+                        width: 400,
+                        height: 300,
                         facingMode: "environment",
+                    },
+                    area: {
+                        top: "0%",
+                        right: "0%",
+                        left: "0%",
+                        bottom: "50%",
                     },
                 },
                 decoder: {
@@ -254,7 +272,7 @@ export default {
     .mediaButton {
         height: 100px;
         width: 90%;
-        font-size: 40px;
+        font-size: 20px;
         background-color: steelblue;
         border-radius: 10px;
         border: none;
@@ -312,5 +330,8 @@ export default {
         border-width: 5px;
         border-color: darkgreen;
         width: 60px;
+        &:focus{
+            background-color: yellow;
+        }
     }
 </style>
