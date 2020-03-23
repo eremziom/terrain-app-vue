@@ -1,7 +1,7 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <TerainApp testProp="Protokół odbioru" />
+    <img alt="TOYA SP. z o.o. LOGO" src="./assets/logo.png">
+    <TerainApp title="Protokół odbioru" />
   </div>
 </template>
 

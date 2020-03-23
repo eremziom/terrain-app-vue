@@ -2,7 +2,7 @@
     <div class="container-fluid cont">
 
         <!-- Header (TOYA SP. Z O.O.) -->
-        <div v-show="numberVerified == false" v-bind:class="mainClass"><h2>{{testProp}}</h2></div>
+        <div v-show="numberVerified == false" v-bind:class="mainClass"><h2>{{title}}</h2></div>
 
         <!-- Customer ID Input -->
         <div v-show="numberVerified == false" v-bind:class="[userNumber.length === 8 ? correct : incorrect, mainClass]" class="nrInput"><b-form-input v-model="userNumber" id="nrAbonenta" type="number" placeholder="Numer Abonenta"></b-form-input></div>
@@ -40,7 +40,9 @@
                 <b-icon-camera class="icon" scale="2"></b-icon-camera>
             </button>
         </div>
-        <div v-show="camera == true" id="scannerContainer" class="scannerContainer"></div>
+        <div v-show="camera == true" id="scannerContainer" class="scannerContainer">
+            <div class="overlay"><span>Skanuj górną częścią</span><b-icon-arrow-bar-up class="arrow" scale="8"></b-icon-arrow-bar-up></div>
+        </div>
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
 
         <!-- Devices Posting Information Status -->
@@ -54,13 +56,13 @@
 </template>
 
 <script>
-//import axios from 'axios';
+//import axios from 'axios' !;
 import Quagga from 'quagga';
 
 export default {
     name: 'TerainApp',
     props: {
-        testProp: String
+        title: String
     },
     methods: {
         showCamera: function(arg){
@@ -93,6 +95,8 @@ export default {
         },
         goBackAbonent: function(){
             this.numberVerified = false;
+            this.userNumber = '';
+            this.addedDeviceNumber = 0;
         },
         addDevice: async function(){
             await this.preparePayload();
@@ -116,12 +120,13 @@ export default {
         },
         showLiveCamera: async function(){
             await Quagga.init({
+                locate: false,
                 inputStream: {
                     name: "Live",
                     type: "LiveStream",
                     target: document.getElementById('scannerContainer'),
                     constraints: {
-                        width: 400,
+                        width: 300,
                         height: 300,
                         facingMode: "environment",
                     },
@@ -129,7 +134,7 @@ export default {
                         top: "0%",
                         right: "0%",
                         left: "0%",
-                        bottom: "50%",
+                        bottom: "60%",
                     },
                 },
                 decoder: {
@@ -137,6 +142,10 @@ export default {
                       "code_93_reader"
                     ],
                 },
+                locator: {
+                    halfSample: false,
+                    patchSize: "x-small",
+                }
             }, function (err) {
                 if (err) {
                     console.log(err);
@@ -198,6 +207,7 @@ export default {
         //             this.error = e
         //         })
         // }
+
     },
     data: function() {
         return {
@@ -332,6 +342,32 @@ export default {
         width: 60px;
         &:focus{
             background-color: yellow;
+        }
+    }
+    .scannerContainer {
+        position: relative;
+        .overlay {
+            position: absolute;
+            width: 300px;
+            top: 40%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0.6;
+            z-index: 100;
+            height: 57.5%;
+            background-color: black;
+            .arrow {
+                position: absolute;
+                top: 50%;
+                margin-left: -150px;
+                width: 100%;
+            }
+            span {
+                position: absolute;
+                top: 10px;
+                width: 100%;
+                margin-left: -150px;
+            }
         }
     }
 </style>
