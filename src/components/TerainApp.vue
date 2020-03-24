@@ -12,10 +12,10 @@
         <div v-show="userNumber.length === 0" v-bind:class="mainClass">Wpisz 8-cyfrowy numer abonenta</div>
         <div v-show="userNumber.length < 8 && userNumber.length > 0" v-bind:class="mainClass">Numer posaida za mało cyfr</div>
         <div v-show="userNumber.length > 8" v-bind:class="mainClass">Numer posiada za duzo cyfr</div>
-        <div v-show="numberNotVerified === true" v-bind:class="mainClass">Numer nie został poprawnie zweryfikowany</div>
+        <div v-show="numberNotVerified === true && userNumber.length === 8" v-bind:class="mainClass">Błąd: '{{responseDataInfo}}'</div>
 
         <!-- Verified Customer ID Number -->
-        <p v-show="numberVerified == true" v-bind:class="mainClass">Nr abonenta: {{userNumber}}</p>
+        <p v-show="numberVerified == true" v-bind:class="mainClass">{{userAddress}}</p>
 
         <!-- Devices Categories Buttons -->
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon')">INTERNET / TELEFON</b-button></div>
@@ -56,7 +56,7 @@
 </template>
 
 <script>
-//import axios from 'axios' !;
+import axios from 'axios';
 import Quagga from 'quagga';
 
 export default {
@@ -70,13 +70,9 @@ export default {
             this.deviceInput = arg;
             this.showLiveCamera();
         },
-        numberCheck: function(){
+        numberCheck: async function(){
             event.preventDefault();
-            if(this.userNumber === this.userNumber){
-                this.numberVerified = true;
-            }  else {
-                this.numberNotVerified = true;
-            }
+            await this.getFromApi();
         },
         showInputs: function(device){
             this.devices[device] = true;
@@ -101,22 +97,25 @@ export default {
         addDevice: async function(){
             await this.preparePayload();
             this.camera = false;
-            if((this.idDevice1 === this.idDevice1 && this.idDevice2 === this.idDevice2) || this.responseDataStatus === 1){
-                this.deviceAdded = true;
-                this.addedDeviceNumber += 1;
-            }   else {
-                this.deviceAddError = true;
-            }
         },
         preparePayload: function(){
+            let chosenDevice = ''
+            if(this.devices.tv === true){
+                chosenDevice = 'tv'
+            }
+            else if(this.devices.intFon === true){
+                chosenDevice = 'netvoip'
+            }
+            else if(this.devices.hdd === true){
+                chosenDevice = 'hdd'
+            }
             const payload = {
-                request: 'protocols_insertdevicepopc',
-                kod_abonenta: this.userNumber,
+                type: chosenDevice,
                 ident_1: this.idDevice1,
                 ident_2: this.idDevice2,
             }
             console.log(payload);
-            //this.postToApi(payload);
+            this.postToApi(payload);
         },
         showLiveCamera: async function(){
             await Quagga.init({
@@ -197,21 +196,55 @@ export default {
               }
             });
         },
-        // postToApi: function(payload){
-        //     axios
-        //         .post('http://beta.csi.toya.net.pl/apps/bober/api/', payload)
-        //         .then(response => (
-        //             this.responseDataInfo = response.data.info,
-        //             this.responseDataStatus = response.data.status))
-        //         .catch(e => {
-        //             this.error = e
-        //         })
-        // }
-
+        postToApi: function(payload){
+            axios
+                .post(`http://217.113.224.208:9900/v1/popc/device/${this.userNumber}`, payload)
+                .then(response => (
+                    console.log('!!!!', response),
+                    this.deviceAdded = true,
+                    this.deviceAddError = false,
+                    this.addedDeviceNumber += 1,
+                    this.responseDataInfo = response.data.data.info
+                    ))
+                    
+                .catch(e => {
+                    this.error = e
+                    console.log(this.error, `ERROR ${e.response.status}`)
+                    this.deviceAddError = true,
+                    this.deviceAdded = false,
+                    console.log('!!!!', e.response)
+                    if(e.response.status === 500){
+                        this.responseDataInfo = 'Wystąpił problem z połączeniem, spróbuj ponownie'
+                    }   else {
+                        this.responseDataInfo = e.response.data.data.info
+                    }
+                })
+        },
+        getFromApi: function(){
+            axios
+                .get(`http://217.113.224.208:9900/v1/popc/usercode/${this.userNumber}`)
+                .then(response => (
+                    this.userAddress = response.data.data.address,
+                    this.numberVerified = true,
+                    this.numberNotVerified = false
+                ))
+                .catch(e => {
+                    this.error = e
+                    this.numberNotVerified = true,
+                    console.log(this.error, 'ERROR 404')
+                    if(e.response.status === 500){
+                        this.responseDataInfo = 'Wystąpił problem z połączeniem, spróbuj ponownie'
+                    }   else {
+                        this.responseDataInfo = 'Nie znaleziono abonenta'
+                        console.log(e.response)
+                    }
+                })
+        },
     },
     data: function() {
         return {
             userNumber: '',
+            userAddress: '',
             mainClass: 'row justify-content-center',
             correct: 'correct',
             incorrect: 'incorrect',
