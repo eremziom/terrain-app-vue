@@ -5,15 +5,15 @@
         <div v-show="numberVerified == false" v-bind:class="mainClass"><h2>{{title}}</h2></div>
 
         <!-- Customer ID Input -->
-        <div v-show="numberVerified == false" v-bind:class="[userNumber.length === 8 ? correct : incorrect, mainClass]" class="nrInput"><b-form-input v-model="userNumber" id="nrAbonenta" type="number" placeholder="Numer Abonenta"></b-form-input></div>
+        <div v-show="numberVerified == false" v-bind:class="[userNumber.length === 8 ? correct : incorrect, mainClass]" class="nrInput"><b-form-input v-model="userNumber" id="nrAbonenta" type="number" placeholder="Kod Abonenta"></b-form-input></div>
         <div v-show="numberVerified == false && userNumber.length === 8" class="row justify-content-center "><b-button class="nrButton" v-on:click="numberCheck">ZATWIERDŹ</b-button></div>
 
         <!-- Customer ID Input Information Status -->
-        <div v-show="userNumber.length === 0" v-bind:class="mainClass">Wpisz 8-cyfrowy numer abonenta</div>
-        <div v-show="userNumber.length < 8 && userNumber.length > 0" v-bind:class="mainClass">Numer posaida za mało cyfr</div>
-        <div v-show="userNumber.length > 8" v-bind:class="mainClass">Numer posiada za duzo cyfr</div>
-        <div v-show="numberNotVerified === true && userNumber.length === 8" v-bind:class="mainClass">Błąd: '{{responseDataInfo}}'</div>
-
+        <div v-show="userNumber.length === 0" v-bind:class="mainClass">Wpisz 8-cyfrowy Kod Abonenta</div>
+        <div v-show="userNumber.length < 8 && userNumber.length > 0" v-bind:class="mainClass">Numer posiada za mało cyfr</div>
+        <div v-show="userNumber.length > 8" v-bind:class="mainClass">Numer posiada za dużo cyfr</div>
+        <div v-show="numberNotVerified === true && userNumber === wrongUserNumber" v-bind:class="mainClass">Błąd: '{{responseDataInfo}}'</div>
+        
         <!-- Verified Customer ID Number -->
         <p v-show="numberVerified == true" v-bind:class="mainClass">{{userAddress}}</p>
 
@@ -26,7 +26,7 @@
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
 
         <!-- Devices Numbers Inputs -->
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 ? correct : incorrect), mainClass]" class="nrInput">
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 || idDevice1.length === 16 ? correct : incorrect), mainClass]" class="nrInput">
             <b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" autocomplete="false" >
             </b-form-input>
             <button class="cameraButton" v-on:click="() => this.showCamera(1)">
@@ -40,14 +40,14 @@
                 <b-icon-camera class="icon" scale="2"></b-icon-camera>
             </button>
         </div>
-        <div v-show="camera == true" id="scannerContainer" class="scannerContainer">
-            <div class="overlay"><span>Skanuj górną częścią</span><b-icon-arrow-bar-up class="arrow" scale="8"></b-icon-arrow-bar-up></div>
+        <div v-show="camera === true" id="scannerContainer" class="scannerContainer">
+            <div v-show="cameraLoaded === true" class="overlay"><span>Skanuj górną częścią</span><b-icon-arrow-bar-up class="arrow" scale="8"></b-icon-arrow-bar-up></div>
         </div>
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
 
         <!-- Devices Posting Information Status -->
         <div v-show="deviceAdded == true" v-bind:class="mainClass" class="verifiedNumber"><span >Sukces: '{{responseDataInfo}}'</span></div>
-        <div v-show="deviceAddError == true" v-bind:class="mainClass" class="error"><span >Bład: '{{responseDataInfo}}'</span></div>
+        <div v-show="deviceAddError == true" v-bind:class="mainClass" class="error"><span >Błąd: '{{responseDataInfo}}'</span></div>
         
         <!-- Go Back Button -->
         <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBack">WRÓĆ</b-button></div>
@@ -58,6 +58,7 @@
 <script>
 import axios from 'axios';
 import Quagga from 'quagga';
+import cameraFlash from '../assets/cameraFlash.mp3';
 
 export default {
     name: 'TerainApp',
@@ -125,8 +126,8 @@ export default {
                     type: "LiveStream",
                     target: document.getElementById('scannerContainer'),
                     constraints: {
-                        width: 300,
-                        height: 300,
+                        width: 1024,
+                        height: 768,
                         facingMode: "environment",
                     },
                     area: {
@@ -141,10 +142,10 @@ export default {
                       "code_93_reader"
                     ],
                 },
-                locator: {
-                    halfSample: false,
-                    patchSize: "x-small",
-                }
+                // locator: {
+                //     halfSample: false,
+                //     patchSize: "x-large",
+                // },
             }, function (err) {
                 if (err) {
                     console.log(err);
@@ -152,6 +153,7 @@ export default {
                 }
                 console.log("Initialization finished. Ready to start");
                 Quagga.start();
+                self.cameraLoaded = true;
 
             });
 
@@ -192,15 +194,17 @@ export default {
                     }   else if (self.deviceInput === 2){
                         self.idDevice2 = this.codeNumber;
                     }
+                    var audio = new Audio(cameraFlash);
+                    audio.play();
+                    Quagga.pause()
                 }
               }
             });
         },
         postToApi: function(payload){
             axios
-                .post(`http://217.113.224.208:9900/v1/popc/device/${this.userNumber}`, payload)
+                .post(`https://webapi.toya.net.pl/v1/popc/device/${this.userNumber}`, payload)
                 .then(response => (
-                    console.log('!!!!', response),
                     this.deviceAdded = true,
                     this.deviceAddError = false,
                     this.addedDeviceNumber += 1,
@@ -211,8 +215,7 @@ export default {
                     this.error = e
                     console.log(this.error, `ERROR ${e.response.status}`)
                     this.deviceAddError = true,
-                    this.deviceAdded = false,
-                    console.log('!!!!', e.response)
+                    this.deviceAdded = false
                     if(e.response.status === 500){
                         this.responseDataInfo = 'Wystąpił problem z połączeniem, spróbuj ponownie'
                     }   else {
@@ -222,7 +225,7 @@ export default {
         },
         getFromApi: function(){
             axios
-                .get(`http://217.113.224.208:9900/v1/popc/usercode/${this.userNumber}`)
+                .get(`https://webapi.toya.net.pl/v1/popc/usercode/${this.userNumber}`)
                 .then(response => (
                     this.userAddress = response.data.data.address,
                     this.numberVerified = true,
@@ -231,12 +234,13 @@ export default {
                 .catch(e => {
                     this.error = e
                     this.numberNotVerified = true,
-                    console.log(this.error, 'ERROR 404')
+                    console.log(this.error, `ERROR ${e.response.status}`)
                     if(e.response.status === 500){
                         this.responseDataInfo = 'Wystąpił problem z połączeniem, spróbuj ponownie'
                     }   else {
-                        this.responseDataInfo = 'Nie znaleziono abonenta'
-                        console.log(e.response)
+                        this.responseDataInfo = 'Nie znaleziono abonenta';
+                        this.wrongUserNumber = this.userNumber;
+                        console.log(this.wrongUserNumber);
                     }
                 })
         },
@@ -244,6 +248,7 @@ export default {
     data: function() {
         return {
             userNumber: '',
+            wrongUserNumber: '',
             userAddress: '',
             mainClass: 'row justify-content-center',
             correct: 'correct',
@@ -261,15 +266,16 @@ export default {
                 intFon: false,
                 hdd: false
             },
-            placeholderInternet: 'ID HFC / GPON',
-            placeholderKarta: 'ID Karty STB',
-            placeholderDysk: 'ID Dysku HDD',
-            placeholderDekoder: 'ID Urządzenia STB',
+            placeholderInternet: 'ID GPON',
+            placeholderKarta: 'Nr Karty Dostępowej',
+            placeholderDysk: 'S/No. Dysku HDD',
+            placeholderDekoder: 'CHIP ID STB',
             idDevice1: '',
             idDevice2: '',
             addedDeviceNumber: 0,
             camera: false,
             deviceInput: '',
+            cameraLoaded: false,
         }
     }
 }
@@ -286,15 +292,15 @@ export default {
         flex-wrap: nowrap;
         input {
             text-align: center;
-            font-size: 20px;
+            font-size: 50px;
             border-radius: 0;
             height: 70px;
         }
     }
     .nrButton {
-        height: 100px;
+        height: 200px;
         width: 90%;
-        font-size: 40px;
+        font-size: 60px;
         background-color: green;
         border-radius: 10px;
         border: none;
@@ -313,9 +319,9 @@ export default {
         }
     }
     .mediaButton {
-        height: 100px;
+        height: 200px;
         width: 90%;
-        font-size: 20px;
+        font-size: 50px;
         background-color: steelblue;
         border-radius: 10px;
         border: none;
@@ -337,7 +343,7 @@ export default {
         margin: 10px;
         width: 90%;
         height: 100px;
-        font-size: 40px;
+        font-size: 60px;
         background-color: darkblue;
         border-radius: 10px;
         border: none;
@@ -372,34 +378,41 @@ export default {
         background-color: green;
         border-width: 5px;
         border-color: darkgreen;
-        width: 60px;
+        width: 100px;
         &:focus{
             background-color: yellow;
         }
     }
     .scannerContainer {
         position: relative;
+        width: 1024px;
+        margin: 0 auto;
         .overlay {
             position: absolute;
-            width: 300px;
+            width: 720px;
             top: 40%;
             left: 50%;
-            margin-left: -150px;
-            opacity: 0.6;
+            margin-left: -360px;
+            opacity: 0.8;
             z-index: 100;
-            height: 57.5%;
+            height: 58%;
             background-color: black;
+            color: white;
+            border-top: solid;
+            border-top-width: 10px;
+            border-color: darkorange;
+
             .arrow {
                 position: absolute;
                 top: 50%;
-                margin-left: -150px;
+                margin-left: -360px;
                 width: 100%;
             }
             span {
                 position: absolute;
                 top: 10px;
                 width: 100%;
-                margin-left: -150px;
+                margin-left: -360px;
             }
         }
     }

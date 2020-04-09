@@ -17,24 +17,23 @@ export default {
 </script>
 
 <style lang="scss">
-body{
-  background-color: darkslategray !important;
-}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: white;
-  font-size: 20px;
+  color: darkslategray;
+  font-size: 50px;
   margin-top: 60px;
-  background-color: darkslategray;
   margin: 0;
-  height: 100vh;
   img{
     max-height: 50px;
     object-fit: cover;
     margin-bottom: 50px;
+    margin-top: 25px;
+  }
+  h2{
+    font-size: 70px;
   }
 }
 
