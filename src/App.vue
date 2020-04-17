@@ -27,7 +27,7 @@ export default {
   margin-top: 60px;
   margin: 0;
   img{
-    max-height: 50px;
+    max-height: 300px;
     object-fit: cover;
     margin-bottom: 50px;
     margin-top: 25px;

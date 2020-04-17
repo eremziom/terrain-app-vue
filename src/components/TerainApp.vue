@@ -26,7 +26,7 @@
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
 
         <!-- Devices Numbers Inputs -->
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 || idDevice1.length === 16 ? correct : incorrect), mainClass]" class="nrInput">
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 || idDevice1.length === 16 || idDevice1.length === 12 ? correct : incorrect), mainClass]" class="nrInput">
             <b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" autocomplete="false" >
             </b-form-input>
             <button class="cameraButton" v-on:click="() => this.showCamera(1)">
@@ -41,7 +41,8 @@
             </button>
         </div>
         <div v-show="camera === true" id="scannerContainer" class="scannerContainer">
-            <div v-show="cameraLoaded === true" class="overlay"><span>Skanuj górną częścią</span><b-icon-arrow-bar-up class="arrow" scale="8"></b-icon-arrow-bar-up></div>
+            <div v-show="cameraLoaded === true" class="overlay"><b-icon-arrow-bar-up class="arrow" scale="8"></b-icon-arrow-bar-up></div>
+            <div v-show="cameraLoaded === true" class="overlay2"><b-icon-arrow-bar-bottom class="arrow" scale="8"></b-icon-arrow-bar-bottom></div>
         </div>
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
 
@@ -58,7 +59,7 @@
 <script>
 import axios from 'axios';
 import Quagga from 'quagga';
-import cameraFlash from '../assets/cameraFlash.mp3';
+//import cameraFlash from '../assets/cameraFlash.mp3';
 
 export default {
     name: 'TerainApp',
@@ -66,14 +67,23 @@ export default {
         title: String
     },
     methods: {
-        showCamera: function(arg){
+        showCamera: async function(arg){
+            if(this.deviceInput){
+                Quagga.stop();
+            }
             this.camera = true;
             this.deviceInput = arg;
-            this.showLiveCamera();
+            console.log(this.devices)
+            if(this.devices.tv === true && arg === 1){
+                this.codeType = "i2of5_reader";
+            }   else this.codeType = "code_93_reader";
+            await this.showLiveCamera();
         },
         numberCheck: async function(){
             event.preventDefault();
             await this.getFromApi();
+            console.log(this.getMobileOperatingSystem());
+            this.operatingSystem = this.getMobileOperatingSystem();
         },
         showInputs: function(device){
             this.devices[device] = true;
@@ -119,6 +129,12 @@ export default {
             this.postToApi(payload);
         },
         showLiveCamera: async function(){
+            let self = this;
+            if(self.deviceInput === 1){
+                self.idDevice1 = '';
+            }   else if(self.deviceInput === 2){
+                self.idDevice2 = '';
+            }
             await Quagga.init({
                 locate: false,
                 inputStream: {
@@ -127,19 +143,32 @@ export default {
                     target: document.getElementById('scannerContainer'),
                     constraints: {
                         width: 1024,
-                        height: 768,
+                        height: 720,
                         facingMode: "environment",
                     },
                     area: {
-                        top: "0%",
+                        top: "45%",
                         right: "0%",
                         left: "0%",
-                        bottom: "60%",
+                        bottom: "45%",
                     },
                 },
                 decoder: {
                     readers: [
-                      "code_93_reader"
+                        self.codeType,
+                    //   "code_93_reader",
+                    //   "ean_8_reader",
+                    //   "ean_reader",
+                    //   "code_39_vin_reader",
+                    //   "code_128_reader",
+                    //   "code_39_reader",
+                    //   "codabar_reader",
+                    //   "upc_reader",
+                    //   "upc_e_reader",
+                    //   "i2of5_reader",
+                    //   "2of5_reader",
+
+
                     ],
                 },
                 // locator: {
@@ -154,10 +183,7 @@ export default {
                 console.log("Initialization finished. Ready to start");
                 Quagga.start();
                 self.cameraLoaded = true;
-
             });
-
-            let self = this;
 
             Quagga.onProcessed(function (result) {
                 var drawingCtx = Quagga.canvas.ctx.overlay,
@@ -187,16 +213,31 @@ export default {
 
             Quagga.onDetected(function (result) {
               if(result){
-                if(result.codeResult) {
+                if(result.codeResult && self.codeType === "i2of5_reader") {
+                  this.codeNumber = result.codeResult.code;
+                    if(self.deviceInput === 1 && this.codeNumber.length === 12 && (this.codeNumber.toString()).charAt(0) === '0'){
+                        self.idDevice1 =  this.codeNumber;
+                        Quagga.stop()
+                        self.cameraLoaded = false;
+                        self.camera = false;
+                        if(self.operatingSystem !== 'iOS'){
+                            window.navigator.vibrate(200);
+                        }
+                    }
+                }
+                else if(result.codeResult) {
                   this.codeNumber = result.codeResult.code;
                     if(self.deviceInput === 1){
                     self.idDevice1 =  this.codeNumber;
                     }   else if (self.deviceInput === 2){
                         self.idDevice2 = this.codeNumber;
                     }
-                    var audio = new Audio(cameraFlash);
-                    audio.play();
-                    Quagga.pause()
+                    Quagga.stop()
+                    self.cameraLoaded = false;
+                    self.camera = false;
+                    if(self.operatingSystem !== 'iOS'){
+                        window.navigator.vibrate(200);
+                    }
                 }
               }
             });
@@ -244,9 +285,23 @@ export default {
                     }
                 })
         },
+        getMobileOperatingSystem: function() {
+        var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            if (/windows phone/i.test(userAgent)) {
+                return "Windows Phone";
+            }
+            if (/android/i.test(userAgent)) {
+                return "Android";
+            }
+            if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                return "iOS";
+            }
+            return "unknown";
+        },
     },
     data: function() {
         return {
+            codeType: "code_93_reader",
             userNumber: '',
             wrongUserNumber: '',
             userAddress: '',
@@ -276,6 +331,7 @@ export default {
             camera: false,
             deviceInput: '',
             cameraLoaded: false,
+            operatingSystem: '',
         }
     }
 }
@@ -385,17 +441,18 @@ export default {
     }
     .scannerContainer {
         position: relative;
-        width: 1024px;
+        width: 720px;
         margin: 0 auto;
         .overlay {
             position: absolute;
-            width: 720px;
-            top: 40%;
-            left: 50%;
-            margin-left: -360px;
+            width: 100%;
+            top: 60%;
+            left: 0%;
+            //margin-left: 50%;
+            margin: 0 auto;
             opacity: 0.8;
             z-index: 100;
-            height: 58%;
+            height: 40%;
             background-color: black;
             color: white;
             border-top: solid;
@@ -404,7 +461,36 @@ export default {
 
             .arrow {
                 position: absolute;
-                top: 50%;
+                bottom: 200px;
+                margin-left: -360px;
+                width: 100%;
+            }
+            span {
+                position: absolute;
+                top: 10px;
+                width: 100%;
+                margin-left: -360px;
+            }
+        }
+        .overlay2 {
+            position: absolute;
+            width: 100%;
+            top: 0%;
+            left: 0%;
+            //margin-left: 50%;
+            margin: 0 auto;
+            opacity: 0.8;
+            z-index: 100;
+            height: 40%;
+            background-color: black;
+            color: white;
+            border-bottom: solid;
+            border-bottom-width: 10px;
+            border-color: darkorange;
+
+            .arrow {
+                position: absolute;
+                top: 200px;
                 margin-left: -360px;
                 width: 100%;
             }
