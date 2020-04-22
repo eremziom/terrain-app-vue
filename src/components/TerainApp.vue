@@ -4,12 +4,20 @@
         <!-- Header (TOYA SP. Z O.O.) -->
         <div v-show="numberVerified == false" v-bind:class="mainClass"><h2>{{title}}</h2></div>
 
+        <!-- Login -->
+        <div v-show="login == false" class="nrInput"><b-form-input v-model="user" placeholder="Użytkownik"></b-form-input></div>
+        <div v-show="login == false" class="nrInput"><b-form-input type="password" v-model="password" placeholder="Hasło"></b-form-input></div>
+
+         <!-- Login Error information -->
+        <div v-show="loginError == true" v-bind:class="mainClass" class="error">{{loginErrorMessage}}</div>
+        <div v-show="login == false" class="row justify-content-center"><b-button class="nrButton" v-on:click="userCheck">ZALOGUJ</b-button></div>
+
         <!-- Customer ID Input -->
-        <div v-show="numberVerified == false" v-bind:class="[userNumber.length === 8 ? correct : incorrect, mainClass]" class="nrInput"><b-form-input v-model="userNumber" id="nrAbonenta" type="number" placeholder="Kod Abonenta"></b-form-input></div>
+        <div v-show="numberVerified == false && login == true" v-bind:class="[userNumber.length === 8 ? correct : incorrect, mainClass]" class="nrInput"><b-form-input v-model="userNumber" id="nrAbonenta" type="number" placeholder="Kod Abonenta"></b-form-input></div>
         <div v-show="numberVerified == false && userNumber.length === 8" class="row justify-content-center "><b-button class="nrButton" v-on:click="numberCheck">ZATWIERDŹ</b-button></div>
 
         <!-- Customer ID Input Information Status -->
-        <div v-show="userNumber.length === 0" v-bind:class="mainClass">Wpisz 8-cyfrowy Kod Abonenta</div>
+        <div v-show="userNumber.length === 0 && login == true" v-bind:class="mainClass">Wpisz 8-cyfrowy Kod Abonenta</div>
         <div v-show="userNumber.length < 8 && userNumber.length > 0" v-bind:class="mainClass">Numer posiada za mało cyfr</div>
         <div v-show="userNumber.length > 8" v-bind:class="mainClass">Numer posiada za dużo cyfr</div>
         <div v-show="numberNotVerified === true && userNumber === wrongUserNumber" v-bind:class="mainClass">Błąd: '{{responseDataInfo}}'</div>
@@ -26,7 +34,7 @@
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
 
         <!-- Devices Numbers Inputs -->
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 || idDevice1.length === 16 || idDevice1.length === 12 ? correct : incorrect), mainClass]" class="nrInput">
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 || idDevice1.length === 16 ? correct : incorrect), mainClass]" class="nrInput">
             <b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" autocomplete="false" >
             </b-form-input>
             <button class="cameraButton" v-on:click="() => this.showCamera(1)">
@@ -59,12 +67,25 @@
 <script>
 import axios from 'axios';
 import Quagga from 'quagga';
-//import cameraFlash from '../assets/cameraFlash.mp3';
 
 export default {
     name: 'TerainApp',
     props: {
         title: String
+    },
+    created: function(){
+        let token = localStorage.getItem('token');
+        if(token){
+            axios
+                .get(`${this.mainAPI}/v1/popc/checkToken?token=${token}`)
+                .then(
+                    this.login = true
+                )
+                .catch(e => (
+                    console.log(e.response)
+                ))
+            this.token = token;
+        }
     },
     methods: {
         showCamera: async function(arg){
@@ -73,17 +94,21 @@ export default {
             }
             this.camera = true;
             this.deviceInput = arg;
-            console.log(this.devices)
             if(this.devices.tv === true && arg === 1){
                 this.codeType = "i2of5_reader";
+            }   else if(this.devices.intFon === true){
+                this.codeType = "code_128_reader"
             }   else this.codeType = "code_93_reader";
             await this.showLiveCamera();
         },
         numberCheck: async function(){
             event.preventDefault();
             await this.getFromApi();
-            console.log(this.getMobileOperatingSystem());
             this.operatingSystem = this.getMobileOperatingSystem();
+        },
+        userCheck: async function(){
+            event.preventDefault();
+            await this.prepareLoginPayload();
         },
         showInputs: function(device){
             this.devices[device] = true;
@@ -125,8 +150,16 @@ export default {
                 ident_1: this.idDevice1,
                 ident_2: this.idDevice2,
             }
-            console.log(payload);
             this.postToApi(payload);
+        },
+        prepareLoginPayload: function(){
+            const payload = {
+                login: this.user,
+                password: this.password
+            }
+            this.postLogin(payload);
+            this.user = '';
+            this.password = '';
         },
         showLiveCamera: async function(){
             let self = this;
@@ -167,14 +200,8 @@ export default {
                     //   "upc_e_reader",
                     //   "i2of5_reader",
                     //   "2of5_reader",
-
-
                     ],
                 },
-                // locator: {
-                //     halfSample: false,
-                //     patchSize: "x-large",
-                // },
             }, function (err) {
                 if (err) {
                     console.log(err);
@@ -216,13 +243,14 @@ export default {
                 if(result.codeResult && self.codeType === "i2of5_reader") {
                   this.codeNumber = result.codeResult.code;
                     if(self.deviceInput === 1 && this.codeNumber.length === 12 && (this.codeNumber.toString()).charAt(0) === '0'){
+                        this.codeNumber = this.codeNumber.slice(0, -1);
                         self.idDevice1 =  this.codeNumber;
-                        Quagga.stop()
-                        self.cameraLoaded = false;
-                        self.camera = false;
-                        if(self.operatingSystem !== 'iOS'){
-                            window.navigator.vibrate(200);
-                        }
+                    }
+                }
+                else if(result.codeResult && self.codeType === "code_128_reader") {
+                  this.codeNumber = result.codeResult.code;
+                    if(self.deviceInput === 1 && this.codeNumber.length === 16 && (this.codeNumber.toString()).charAt(0) === '4'){
+                        self.idDevice1 =  this.codeNumber;
                     }
                 }
                 else if(result.codeResult) {
@@ -232,19 +260,38 @@ export default {
                     }   else if (self.deviceInput === 2){
                         self.idDevice2 = this.codeNumber;
                     }
-                    Quagga.stop()
-                    self.cameraLoaded = false;
-                    self.camera = false;
-                    if(self.operatingSystem !== 'iOS'){
-                        window.navigator.vibrate(200);
-                    }
+                }
+                Quagga.stop()
+                self.cameraLoaded = false;
+                self.camera = false;
+                if(self.operatingSystem !== 'iOS'){
+                    window.navigator.vibrate(200);
                 }
               }
             });
         },
+        postLogin: function(payload){
+            axios
+                .post(`${this.mainAPI}/v1/popc/auth`, payload)
+                .then(response => (
+                    this.token = response.data.data.token,
+                    this.loginError = false,
+                    this.userLogged()
+                ))
+                .catch(e => {
+                    console.log(e.response)
+                    if(e.response.status === 500){
+                        this.loginErrorMessage = 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie';
+                        this.loginError = true;
+                    } else {
+                        this.loginErrorMessage = 'Podano niewłaściwy login lub hasło. Spróbuj ponownie';
+                        this.loginError = true;
+                    }
+                })
+        },
         postToApi: function(payload){
             axios
-                .post(`https://webapi.toya.net.pl/v1/popc/device/${this.userNumber}`, payload)
+                .post(`${this.mainAPI}/v1/popc/device/${this.userNumber}?token=${this.token}`, payload)
                 .then(response => (
                     this.deviceAdded = true,
                     this.deviceAddError = false,
@@ -258,7 +305,7 @@ export default {
                     this.deviceAddError = true,
                     this.deviceAdded = false
                     if(e.response.status === 500){
-                        this.responseDataInfo = 'Wystąpił problem z połączeniem, spróbuj ponownie'
+                        this.responseDataInfo = 'Wystąpił nieoczekiwany błąd, spróbuj ponownie'
                     }   else {
                         this.responseDataInfo = e.response.data.data.info
                     }
@@ -266,7 +313,7 @@ export default {
         },
         getFromApi: function(){
             axios
-                .get(`https://webapi.toya.net.pl/v1/popc/usercode/${this.userNumber}`)
+                .get(`${this.mainAPI}/v1/popc/usercode/${this.userNumber}?token=${this.token}`)
                 .then(response => (
                     this.userAddress = response.data.data.address,
                     this.numberVerified = true,
@@ -277,13 +324,18 @@ export default {
                     this.numberNotVerified = true,
                     console.log(this.error, `ERROR ${e.response.status}`)
                     if(e.response.status === 500){
-                        this.responseDataInfo = 'Wystąpił problem z połączeniem, spróbuj ponownie'
+                        this.responseDataInfo = 'Wystąpił nieoczekiwany błąd, spróbuj ponownie'
                     }   else {
                         this.responseDataInfo = 'Nie znaleziono abonenta';
                         this.wrongUserNumber = this.userNumber;
-                        console.log(this.wrongUserNumber);
                     }
                 })
+        },
+        userLogged: function(){
+            if(this.token){
+                this.login = true;
+                localStorage.setItem('token', this.token)
+            }
         },
         getMobileOperatingSystem: function() {
         var userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -321,7 +373,7 @@ export default {
                 intFon: false,
                 hdd: false
             },
-            placeholderInternet: 'ID GPON',
+            placeholderInternet: 'GPON S/N / SN',
             placeholderKarta: 'Nr Karty Dostępowej',
             placeholderDysk: 'S/No. Dysku HDD',
             placeholderDekoder: 'CHIP ID STB',
@@ -332,6 +384,14 @@ export default {
             deviceInput: '',
             cameraLoaded: false,
             operatingSystem: '',
+            login: false,
+            user: '',
+            password: '',
+            token: '',
+            loginError: false,
+            mainAPI: 'https://webapi.toya.net.pl',
+            testAPI: 'http://217.113.224.208:9900',
+            loginErrorMessage: '',
         }
     }
 }
@@ -351,6 +411,7 @@ export default {
             font-size: 50px;
             border-radius: 0;
             height: 70px;
+            flex: 5 0 0;
         }
     }
     .nrButton {
@@ -434,7 +495,7 @@ export default {
         background-color: green;
         border-width: 5px;
         border-color: darkgreen;
-        width: 100px;
+        flex: 1 0 0;
         &:focus{
             background-color: yellow;
         }
@@ -465,12 +526,6 @@ export default {
                 margin-left: -360px;
                 width: 100%;
             }
-            span {
-                position: absolute;
-                top: 10px;
-                width: 100%;
-                margin-left: -360px;
-            }
         }
         .overlay2 {
             position: absolute;
@@ -493,12 +548,6 @@ export default {
                 top: 200px;
                 margin-left: -360px;
                 width: 100%;
-            }
-            span {
-                position: absolute;
-                top: 10px;
-                width: 100%;
-                margin-left: -360px;
             }
         }
     }
