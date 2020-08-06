@@ -27,12 +27,13 @@
 
         <!-- Devices Categories Buttons -->
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon')">INTERNET / TELEFON</b-button></div>
+        <div v-if="responseWifiData != undefined && categoryChosen == false"><p>SSID: {{responseWifiData.ssid}}</p><p>PASS: {{responseWifiData.pass}}</p></div>
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('tv')">TELEWIZJA</b-button></div>
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('hdd')">DYSK HDD</b-button></div>
 
         <!-- Total Number Of Succesfully Added Devices -->
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
-
+        
         <!-- Devices Numbers Inputs -->
         <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 || idDevice1.length === 16 ? correct : incorrect), mainClass]" class="nrInput">
             <b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" autocomplete="false" >
@@ -55,7 +56,7 @@
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
 
         <!-- Devices Posting Information Status -->
-        <div v-show="deviceAdded == true" v-bind:class="mainClass" class="verifiedNumber"><span >Sukces: '{{responseDataInfo}}'</span></div>
+        <div v-show="deviceAdded == true" v-bind:class="mainClass" class="verifiedNumber"><span >Sukces: '{{responseDataInfo}}'<div v-if="devices.intFon === true && responseWifiData" class="wifiInfo">SSID: {{responseWifiData.ssid}} | PASS: {{responseWifiData.pass}}</div></span></div>
         <div v-show="deviceAddError == true" v-bind:class="mainClass" class="error"><span >Błąd: '{{responseDataInfo}}'</span></div>
         
         <!-- Go Back Button -->
@@ -79,10 +80,11 @@ export default {
             axios
                 .get(`${this.mainAPI}/v1/popc/checkToken?token=${token}`)
                 .then(
-                    this.login = true
+                    this.login = true,
                 )
-                .catch(e => (
-                    console.log(e.response)
+                .catch(() => (
+                    localStorage.removeItem('token'),
+                    this.login = false
                 ))
             this.token = token;
         }
@@ -92,6 +94,7 @@ export default {
             if(this.deviceInput){
                 Quagga.stop();
             }
+            this.deviceAddError = false;
             this.camera = true;
             this.deviceInput = arg;
             if(this.devices.tv === true && arg === 1){
@@ -124,11 +127,13 @@ export default {
             this.deviceAdded = false;
             this.deviceAddError = false;
             this.camera = false;
+            
         },
         goBackAbonent: function(){
             this.numberVerified = false;
             this.userNumber = '';
             this.addedDeviceNumber = 0;
+            this.responseWifiData = null;
         },
         addDevice: async function(){
             await this.preparePayload();
@@ -245,41 +250,61 @@ export default {
                     if(self.deviceInput === 1 && this.codeNumber.length === 12 && (this.codeNumber.toString()).charAt(0) === '0'){
                         this.codeNumber = this.codeNumber.slice(0, -1);
                         self.idDevice1 =  this.codeNumber;
+                        Quagga.stop()
+                        self.cameraLoaded = false;
+                        self.camera = false;
+                        if(self.operatingSystem !== 'iOS'){
+                            window.navigator.vibrate(200);
+                        }
                     }
                 }
                 else if(result.codeResult && self.codeType === "code_128_reader") {
                   this.codeNumber = result.codeResult.code;
-                    if(self.deviceInput === 1 && this.codeNumber.length === 16 && (this.codeNumber.toString()).charAt(0) === '4'){
+                  let numberPattern = /^[a-zA-Z0-9]+$/;
+                    if(self.deviceInput === 1 && this.codeNumber.length === 16 
+                    && (this.codeNumber.toString()).charAt(0) === '4'
+                    && numberPattern.test(this.codeNumber)){
                         self.idDevice1 =  this.codeNumber;
+                        Quagga.stop()
+                        self.cameraLoaded = false;
+                        self.camera = false;
+                        if(self.operatingSystem !== 'iOS'){
+                            window.navigator.vibrate(200);
+                        }
                     }
                 }
                 else if(result.codeResult) {
                   this.codeNumber = result.codeResult.code;
                     if(self.deviceInput === 1){
-                    self.idDevice1 =  this.codeNumber;
+                        self.idDevice1 =  this.codeNumber;
+                        Quagga.stop()
+                        self.cameraLoaded = false;
+                        self.camera = false;
+                        if(self.operatingSystem !== 'iOS'){
+                            window.navigator.vibrate(200);
+                        }
                     }   else if (self.deviceInput === 2){
                         self.idDevice2 = this.codeNumber;
+                        Quagga.stop()
+                        self.cameraLoaded = false;
+                        self.camera = false;
+                        if(self.operatingSystem !== 'iOS'){
+                            window.navigator.vibrate(200);
+                        }
                     }
-                }
-                Quagga.stop()
-                self.cameraLoaded = false;
-                self.camera = false;
-                if(self.operatingSystem !== 'iOS'){
-                    window.navigator.vibrate(200);
                 }
               }
             });
         },
         postLogin: function(payload){
             axios
-                .post(`${this.mainAPI}/v1/popc/auth`, payload)
+                .post(`${this.testAPI}/v1/popc/auth`, payload)
                 .then(response => (
                     this.token = response.data.data.token,
                     this.loginError = false,
                     this.userLogged()
                 ))
                 .catch(e => {
-                    console.log(e.response)
                     if(e.response.status === 500){
                         this.loginErrorMessage = 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie';
                         this.loginError = true;
@@ -291,21 +316,21 @@ export default {
         },
         postToApi: function(payload){
             axios
-                .post(`${this.mainAPI}/v1/popc/device/${this.userNumber}?token=${this.token}`, payload)
+                .post(`${this.testAPI}/v1/popc/device/${this.userNumber}?token=${this.token}`, payload)
                 .then(response => (
                     this.deviceAdded = true,
                     this.deviceAddError = false,
                     this.addedDeviceNumber += 1,
-                    this.responseDataInfo = response.data.data.info
+                    this.responseDataInfo = response.data.data.info,
+                    this.wifiDataCheck(response)
                     ))
                     
                 .catch(e => {
                     this.error = e
-                    console.log(this.error, `ERROR ${e.response.status}`)
                     this.deviceAddError = true,
                     this.deviceAdded = false
                     if(e.response.status === 500){
-                        this.responseDataInfo = 'Wystąpił nieoczekiwany błąd, spróbuj ponownie'
+                        this.responseDataInfo = 'Wystąpił nieoczekiwany błąd, spróbuj ponownie.'
                     }   else {
                         this.responseDataInfo = e.response.data.data.info
                     }
@@ -313,7 +338,7 @@ export default {
         },
         getFromApi: function(){
             axios
-                .get(`${this.mainAPI}/v1/popc/usercode/${this.userNumber}?token=${this.token}`)
+                .get(`${this.testAPI}/v1/popc/usercode/${this.userNumber}?token=${this.token}`)
                 .then(response => (
                     this.userAddress = response.data.data.address,
                     this.numberVerified = true,
@@ -321,8 +346,7 @@ export default {
                 ))
                 .catch(e => {
                     this.error = e
-                    this.numberNotVerified = true,
-                    console.log(this.error, `ERROR ${e.response.status}`)
+                    this.numberNotVerified = true;
                     if(e.response.status === 500){
                         this.responseDataInfo = 'Wystąpił nieoczekiwany błąd, spróbuj ponownie'
                     }   else {
@@ -335,6 +359,16 @@ export default {
             if(this.token){
                 this.login = true;
                 localStorage.setItem('token', this.token)
+            }
+        },
+        wifiDataCheck: function(response){
+            if(response.data.data.wifi.ssid != undefined && response.data.data.wifi.pass != undefined){
+                this.responseWifiData = {
+                    ssid: response.data.data.wifi.ssid,
+                    pass: response.data.data.wifi.pass
+                }
+            }   else {
+                this.responseWifiData = 'Nie udało się poobrać danych wifi'
             }
         },
         getMobileOperatingSystem: function() {
@@ -367,6 +401,7 @@ export default {
             deviceAddError: false,
             responseDataInfo: null,
             responseDataStatus: null,
+            responseWifiData: null,
             error: null,
             devices: {
                 tv: false,
@@ -398,6 +433,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+    .cont {
+        padding-bottom: 50px;
+    }
     .nrInput{
         width: 90%;
         margin: 10px auto;
@@ -550,5 +588,8 @@ export default {
                 width: 100%;
             }
         }
+    }
+    .wifiInfo {
+        font-size: 40px;
     }
 </style>
