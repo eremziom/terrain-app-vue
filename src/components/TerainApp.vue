@@ -34,7 +34,7 @@
 
         <!-- Total Number Of Succesfully Added Devices -->
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba odebranych urządzeń: {{addedDeviceNumber}}</div>
-        <!-- <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba wymienionych urządzeń: {{changeDeviceNumber}}</div> -->
+        <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba wymienionych urządzeń: {{changeDeviceNumber}}</div>
         
         <!-- Devices Numbers Inputs -->
         <div v-show="exchange == true" v-bind:class="[idDevice3.length === 12 ? correct : incorrect, mainClass]" class="nrInput">
