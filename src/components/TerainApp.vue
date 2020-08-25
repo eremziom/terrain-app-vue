@@ -30,24 +30,37 @@
         <div v-show="numberVerified == true && categoryChosen == false && protocol == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="chooseProtocol('wymiana')">PROTOKÓŁ WYMIANY</b-button></div>
 
         <!-- Devices Categories Buttons -->
+        <h1 v-show="protocol == 'wymiana'">Protokół wymiany</h1>
+        <h1 v-show="protocol == 'odbiór'">Protokół odbioru</h1>
         <div v-show="protocol == 'odbiór'">
-            <h1>Protokół odbioru</h1>
             <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon')">INTERNET / TELEFON</b-button></div>
             <div v-if="responseWifiData != undefined && categoryChosen == false"><p>SSID: {{responseWifiData.ssid}}</p><p>PASS: {{responseWifiData.pass}}</p></div>
             <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('tv')">TELEWIZJA</b-button></div>
             <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('hdd')">DYSK HDD</b-button></div>
         </div>
-        <div v-show="protocol == 'wymiana'">
-            <h1>Protokół wymiany</h1>
-            <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon', 'wymiana')">WYMIANA URZĄDZENIA</b-button></div>
+        <div v-show="protocol == 'wymiana' && !exchangeMenu">
+            <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showCategories('intFon')">INTERNET</b-button></div>
+            <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showCategories('tv')">TELEWIZJA</b-button></div>
+            <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('hdd', 'exchange', 'S/No. wymienianego HDD')">DYSK HDD</b-button></div>
         </div>
+
+        <div v-show="exchangeMenu == 'intFon' && categoryChosen == false">
+            <div v-show="numberVerified == true" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon', 'exchange', 'wymieniany GPON S/N')">GPON -> GPON</b-button></div>
+            <div v-show="numberVerified == true" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon', 'exchange', 'wymieniany HFC')">HFC -> HFC</b-button></div>
+            <div v-show="numberVerified == true" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon', 'exchange', 'zamieniany HFC')">HFC -> GPON</b-button></div>
+        </div>
+        <div v-show="exchangeMenu == 'tv' && categoryChosen == false">
+            <div v-show="numberVerified == true" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('tv', 'exchange', 'wymieniany CHIP ID STB')">ODBIORNIK STB</b-button></div>
+            <div v-show="numberVerified == true" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('tv', 'exchange', 'wymieniana Karta')">KARTA DOSTĘPOWA</b-button></div>
+        </div>
+
         <!-- Total Number Of Succesfully Added Devices -->
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba odebranych urządzeń: {{addedDeviceNumber}}</div>
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba wymienionych urządzeń: {{changeDeviceNumber}}</div>
         
         <!-- Devices Numbers Inputs -->
         <div v-show="exchange == true" v-bind:class="[idDevice3.length === 12 ? correct : incorrect, mainClass]" class="nrInput">
-            <b-form-input id="ident3" v-model="idDevice3" v-bind:placeholder="placeholderHFC" autocomplete="false" >
+            <b-form-input id="ident3" v-model="idDevice3" v-bind:placeholder="placeholderExchange" autocomplete="false" >
             </b-form-input>
             <button class="cameraButton" v-on:click="() => this.showCamera(1)">
                 <b-icon-camera class="icon" scale="2"></b-icon-camera>
@@ -60,7 +73,7 @@
                 <b-icon-camera class="icon" scale="2"></b-icon-camera>
             </button>
         </div>
-        <div v-show="devices.tv == true" v-bind:class="[idDevice2.length === 11 ? correct : incorrect, mainClass]" class="nrInput">
+        <div v-show="devices.tv == true && !exchangeMenu" v-bind:class="[idDevice2.length === 11 ? correct : incorrect, mainClass]" class="nrInput">
             <b-form-input id="ident2" v-model="idDevice2" v-bind:placeholder="placeholderDekoder" autocomplete="false">
             </b-form-input>
             <button class="cameraButton" v-on:click="() => this.showCamera(2)">
@@ -78,9 +91,10 @@
         <div v-show="deviceAddError == true" v-bind:class="mainClass" class="error"><span >Błąd: '{{responseDataInfo}}'</span></div>
         
         <!-- Go Back Button -->
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBack">WRÓĆ</b-button></div>
+        <div v-show="categoryChosen" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBack">WRÓĆ</b-button></div>
         <div v-show="numberVerified && !categoryChosen && !protocol" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBackAbonent">WRÓĆ</b-button></div>
-        <div v-show="numberVerified && !categoryChosen && protocol" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBackProtocol">WRÓĆ</b-button></div>
+        <div v-show="numberVerified && !categoryChosen && protocol && !exchangeMenu" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBackProtocol">WRÓĆ</b-button></div>
+        <div v-show="numberVerified && !categoryChosen && protocol && exchangeMenu" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBackExchange">WRÓĆ</b-button></div>
     </div>
 </template>
 
@@ -132,12 +146,36 @@ export default {
             event.preventDefault();
             await this.prepareLoginPayload();
         },
-        showInputs: function(device, exchange){
+        showInputs: function(device, exchange, placeholder){
             this.devices[device] = true;
             this.categoryChosen = true;
-            if(exchange){
+            if(exchange == 'exchange'){
                 this.exchange = true;
-            }
+                this.placeholderExchange = placeholder;
+                if(placeholder == 'S/No. wymienianego HDD'){
+                    this.placeholderDysk = 'S/No. nowego HDD'
+                }
+                if(placeholder == 'wymieniany GPON S/N'){
+                    this.placeholderInternet = 'nowy GPON S/N';
+                }
+                if(placeholder == 'wymieniany HFC'){
+                    this.placeholderInternet = 'nowy HFC';
+                }
+                if(placeholder == 'zamieniany HFC'){
+                    this.placeholderInternet = 'nowy GPON S/N';
+                }
+                if(placeholder == 'wymieniany CHIP ID STB'){
+                    this.placeholderKarta = 'nowy CHIP ID STB';
+                }
+                if(placeholder == 'wymieniana Karta'){
+                    this.placeholderKarta = 'nowa Karta Dostępowa';
+                }
+            } 
+        },
+        showCategories: function(device){
+            console.log(device)
+            this.exchangeMenu = device;
+            
         },
         goBack: function(){
             this.devices.tv = false;
@@ -155,6 +193,14 @@ export default {
         },
         goBackProtocol: function(){
             this.protocol = '';
+            this.exchangeMenu = '';
+            this.placeholderInternet = 'GPON S/N / SN / HFC';
+            this.placeholderKarta = 'Nr Karty Dostępowej';
+            this.placeholderDysk = 'S/No. Dysku HDD';
+            this.placeholderDekoder = 'CHIP ID STB';
+        },
+        goBackExchange: function(){
+            this.exchangeMenu = '';
         },
         goBackAbonent: function(){
             this.numberVerified = false;
@@ -404,7 +450,7 @@ export default {
             }
         },
         getMobileOperatingSystem: function() {
-        var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
             if (/windows phone/i.test(userAgent)) {
                 return "Windows Phone";
             }
@@ -445,7 +491,7 @@ export default {
             placeholderKarta: 'Nr Karty Dostępowej',
             placeholderDysk: 'S/No. Dysku HDD',
             placeholderDekoder: 'CHIP ID STB',
-            placeholderHFC: 'HFC do wymiany',
+            placeholderExchange: '',
             idDevice1: '',
             idDevice2: '',
             idDevice3: '',
@@ -464,6 +510,7 @@ export default {
             testAPI: 'http://217.113.224.208:9900',
             loginErrorMessage: '',
             protocol: '',
+            exchangeMenu: false,
         }
     },
 }
