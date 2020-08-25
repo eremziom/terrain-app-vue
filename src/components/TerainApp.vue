@@ -25,13 +25,22 @@
         <!-- Verified Customer ID Number -->
         <p v-show="numberVerified == true" v-bind:class="mainClass">{{userAddress}}</p>
 
-        <!-- Devices Categories Buttons -->
-        <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon')">INTERNET / TELEFON</b-button></div>
-        <div v-if="responseWifiData != undefined && categoryChosen == false"><p>SSID: {{responseWifiData.ssid}}</p><p>PASS: {{responseWifiData.pass}}</p></div>
-        <!-- <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon', 'wymiana')">WYMIANA URZĄDZENIA</b-button></div> -->
-        <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('tv')">TELEWIZJA</b-button></div>
-        <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('hdd')">DYSK HDD</b-button></div>
+        <!-- Protocol Buttons -->
+        <div v-show="numberVerified == true && categoryChosen == false && protocol == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="chooseProtocol('odbiór')">PROTOKÓŁ ODBIORU</b-button></div>
+        <div v-show="numberVerified == true && categoryChosen == false && protocol == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="chooseProtocol('wymiana')">PROTOKÓŁ WYMIANY</b-button></div>
 
+        <!-- Devices Categories Buttons -->
+        <div v-show="protocol == 'odbiór'">
+            <h1>Protokół odbioru</h1>
+            <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon')">INTERNET / TELEFON</b-button></div>
+            <div v-if="responseWifiData != undefined && categoryChosen == false"><p>SSID: {{responseWifiData.ssid}}</p><p>PASS: {{responseWifiData.pass}}</p></div>
+            <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('tv')">TELEWIZJA</b-button></div>
+            <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('hdd')">DYSK HDD</b-button></div>
+        </div>
+        <div v-show="protocol == 'wymiana'">
+            <h1>Protokół wymiany</h1>
+            <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon', 'wymiana')">WYMIANA URZĄDZENIA</b-button></div>
+        </div>
         <!-- Total Number Of Succesfully Added Devices -->
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba odebranych urządzeń: {{addedDeviceNumber}}</div>
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba wymienionych urządzeń: {{changeDeviceNumber}}</div>
@@ -70,7 +79,8 @@
         
         <!-- Go Back Button -->
         <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBack">WRÓĆ</b-button></div>
-        <div v-show="numberVerified && !categoryChosen" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBackAbonent">WRÓĆ</b-button></div>
+        <div v-show="numberVerified && !categoryChosen && !protocol" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBackAbonent">WRÓĆ</b-button></div>
+        <div v-show="numberVerified && !categoryChosen && protocol" v-bind:class="mainClass"><b-button class="backButton" v-on:click="goBackProtocol">WRÓĆ</b-button></div>
     </div>
 </template>
 
@@ -143,16 +153,23 @@ export default {
             this.exchange = '';
             
         },
+        goBackProtocol: function(){
+            this.protocol = '';
+        },
         goBackAbonent: function(){
             this.numberVerified = false;
             this.userNumber = '';
             this.addedDeviceNumber = 0;
             this.changeDeviceNumber = 0;
             this.responseWifiData = null;
+            this.protocol = '';
         },
         addDevice: async function(){
             await this.preparePayload();
             this.camera = false;
+        },
+        chooseProtocol: function(protocol){
+            this.protocol = protocol;
         },
         preparePayload: function(){
             let chosenDevice = ''
@@ -313,7 +330,7 @@ export default {
         },
         postLogin: function(payload){
             axios
-                .post(`${this.mainAPI}/v1/popc/auth`, payload)
+                .post(`${this.testAPI}/v1/popc/auth`, payload)
                 .then(response => (
                     this.token = response.data.data.token,
                     this.loginError = false,
@@ -331,7 +348,7 @@ export default {
         },
         postToApi: function(payload){
             axios
-                .post(`${this.mainAPI}/v1/popc/device/${this.userNumber}?token=${this.token}`, payload)
+                .post(`${this.testAPI}/v1/popc/device/${this.userNumber}?token=${this.token}`, payload)
                 .then(response => (
                     this.deviceAdded = true,
                     this.deviceAddError = false,
@@ -353,7 +370,7 @@ export default {
         },
         getFromApi: function(){
             axios
-                .get(`${this.mainAPI}/v1/popc/usercode/${this.userNumber}?token=${this.token}`)
+                .get(`${this.testAPI}/v1/popc/usercode/${this.userNumber}?token=${this.token}`)
                 .then(response => (
                     this.userAddress = response.data.data.address,
                     this.numberVerified = true,
@@ -446,8 +463,9 @@ export default {
             mainAPI: 'https://webapi.toya.net.pl',
             testAPI: 'http://217.113.224.208:9900',
             loginErrorMessage: '',
+            protocol: '',
         }
-    }
+    },
 }
 </script>
 
