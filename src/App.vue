@@ -2,7 +2,7 @@
   <div id="app">
     <img alt="TOYA SP. z o.o. LOGO" src="./assets/logo.png">
     <TerainApp title="Protokół odbioru" />
-    <div class="footer">Grupa TOYA © 2020</div>
+    <div class="footer">Grupa TOYA © 2020 {{version}}</div>
   </div>
 </template>
 
@@ -14,6 +14,11 @@ export default {
   components: {
     TerainApp
   },
+  data: function(){
+    return{
+      version: 'v1.2'
+    }
+  }
 }
 </script>
 
@@ -43,10 +48,10 @@ export default {
     font-size: 20px;
     font-family: 'Roboto', sans-serif;
     color: #AAAAAA;
-    width: 200px;
+    width: 250px;
     bottom: 10px;
     left: 50%;
-    margin-left: -100px;
+    margin-left: -125px;
   }
 }
 

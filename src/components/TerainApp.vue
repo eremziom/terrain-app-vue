@@ -28,14 +28,23 @@
         <!-- Devices Categories Buttons -->
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon')">INTERNET / TELEFON</b-button></div>
         <div v-if="responseWifiData != undefined && categoryChosen == false"><p>SSID: {{responseWifiData.ssid}}</p><p>PASS: {{responseWifiData.pass}}</p></div>
+        <!-- <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('intFon', 'wymiana')">WYMIANA URZĄDZENIA</b-button></div> -->
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('tv')">TELEWIZJA</b-button></div>
         <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass"><b-button class="mediaButton" v-on:click="showInputs('hdd')">DYSK HDD</b-button></div>
 
         <!-- Total Number Of Succesfully Added Devices -->
-        <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba dodanych urządzeń: {{addedDeviceNumber}}</div>
+        <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba odebranych urządzeń: {{addedDeviceNumber}}</div>
+        <!-- <div v-show="numberVerified == true && categoryChosen == false" v-bind:class="mainClass">Liczba wymienionych urządzeń: {{changeDeviceNumber}}</div> -->
         
         <!-- Devices Numbers Inputs -->
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 || idDevice1.length === 16 ? correct : incorrect), mainClass]" class="nrInput">
+        <div v-show="exchange == true" v-bind:class="[idDevice3.length === 12 ? correct : incorrect, mainClass]" class="nrInput">
+            <b-form-input id="ident3" v-model="idDevice3" v-bind:placeholder="placeholderHFC" autocomplete="false" >
+            </b-form-input>
+            <button class="cameraButton" v-on:click="() => this.showCamera(1)">
+                <b-icon-camera class="icon" scale="2"></b-icon-camera>
+            </button>
+        </div>
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 || idDevice1.length === 16 || idDevice1.length === 12 ? correct : incorrect), mainClass]" class="nrInput">
             <b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" autocomplete="false" >
             </b-form-input>
             <button class="cameraButton" v-on:click="() => this.showCamera(1)">
@@ -113,9 +122,12 @@ export default {
             event.preventDefault();
             await this.prepareLoginPayload();
         },
-        showInputs: function(device){
+        showInputs: function(device, exchange){
             this.devices[device] = true;
             this.categoryChosen = true;
+            if(exchange){
+                this.exchange = true;
+            }
         },
         goBack: function(){
             this.devices.tv = false;
@@ -124,15 +136,18 @@ export default {
             this.categoryChosen = false;
             this.idDevice2 = '';
             this.idDevice1 = '';
+            this.idDevice3 = '';
             this.deviceAdded = false;
             this.deviceAddError = false;
             this.camera = false;
+            this.exchange = '';
             
         },
         goBackAbonent: function(){
             this.numberVerified = false;
             this.userNumber = '';
             this.addedDeviceNumber = 0;
+            this.changeDeviceNumber = 0;
             this.responseWifiData = null;
         },
         addDevice: async function(){
@@ -261,8 +276,8 @@ export default {
                 else if(result.codeResult && self.codeType === "code_128_reader") {
                   this.codeNumber = result.codeResult.code;
                   let numberPattern = /^[a-zA-Z0-9]+$/;
-                    if(self.deviceInput === 1 && this.codeNumber.length === 16 
-                    && (this.codeNumber.toString()).charAt(0) === '4'
+                    if(self.deviceInput === 1 
+                    && ((this.codeNumber.length === 16 && (this.codeNumber.toString()).charAt(0) === '4') || this.codeNumber.length === 12)
                     && numberPattern.test(this.codeNumber)){
                         self.idDevice1 =  this.codeNumber;
                         Quagga.stop()
@@ -298,7 +313,7 @@ export default {
         },
         postLogin: function(payload){
             axios
-                .post(`${this.testAPI}/v1/popc/auth`, payload)
+                .post(`${this.mainAPI}/v1/popc/auth`, payload)
                 .then(response => (
                     this.token = response.data.data.token,
                     this.loginError = false,
@@ -316,7 +331,7 @@ export default {
         },
         postToApi: function(payload){
             axios
-                .post(`${this.testAPI}/v1/popc/device/${this.userNumber}?token=${this.token}`, payload)
+                .post(`${this.mainAPI}/v1/popc/device/${this.userNumber}?token=${this.token}`, payload)
                 .then(response => (
                     this.deviceAdded = true,
                     this.deviceAddError = false,
@@ -338,7 +353,7 @@ export default {
         },
         getFromApi: function(){
             axios
-                .get(`${this.testAPI}/v1/popc/usercode/${this.userNumber}?token=${this.token}`)
+                .get(`${this.mainAPI}/v1/popc/usercode/${this.userNumber}?token=${this.token}`)
                 .then(response => (
                     this.userAddress = response.data.data.address,
                     this.numberVerified = true,
@@ -408,13 +423,17 @@ export default {
                 intFon: false,
                 hdd: false
             },
-            placeholderInternet: 'GPON S/N / SN',
+            exchange: false,
+            placeholderInternet: 'GPON S/N / SN / HFC',
             placeholderKarta: 'Nr Karty Dostępowej',
             placeholderDysk: 'S/No. Dysku HDD',
             placeholderDekoder: 'CHIP ID STB',
+            placeholderHFC: 'HFC do wymiany',
             idDevice1: '',
             idDevice2: '',
+            idDevice3: '',
             addedDeviceNumber: 0,
+            changeDeviceNumber: 0,
             camera: false,
             deviceInput: '',
             cameraLoaded: false,
