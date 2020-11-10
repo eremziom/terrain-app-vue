@@ -59,8 +59,8 @@
             </button>
         </div>
         <div v-show="camera === true" id="scannerContainer" class="scannerContainer">
-            <div v-show="cameraLoaded === true" class="overlay"><b-icon-arrow-bar-up class="arrow" scale="8"></b-icon-arrow-bar-up></div>
-            <div v-show="cameraLoaded === true" class="overlay2"><b-icon-arrow-bar-bottom class="arrow" scale="8"></b-icon-arrow-bar-bottom></div>
+            <div v-if="cameraLoaded === true" class="overlay"><b-icon-arrow-bar-up class="arrow" scale="8"></b-icon-arrow-bar-up></div>
+            <div v-if="cameraLoaded === true" class="overlay2"><b-icon-arrow-bar-bottom class="arrow" scale="8"></b-icon-arrow-bar-bottom></div>
         </div>
         <div v-show="(devices.tv || devices.intFon || devices.hdd == true) && deviceAdded == false" v-bind:class="mainClass"><b-button class="nrButton" v-on:click="addDevice">DODAJ</b-button></div>
 
@@ -103,6 +103,9 @@ export default {
             if(this.deviceInput){
                 Quagga.stop();
             }
+            if(this.cameraLoaded === true){
+                this.cameraLoaded = false;
+            }
             this.deviceAddError = false;
             this.camera = true;
             this.deviceInput = arg;
@@ -143,6 +146,7 @@ export default {
             this.deviceAddError = false;
             this.camera = false;
             this.exchange = '';
+            this.cameraLoaded = false;
             
         },
         goBackAbonent: function(){
@@ -232,11 +236,7 @@ export default {
                 }
                 console.log("Initialization finished. Ready to start");
                 Quagga.start();
-                navigator.mediaDevices.getUserMedia({  
-                    video: {
-                        facingMode: 'environment',
-                    }
-                    })
+                navigator.mediaDevices.getUserMedia()
                     .then((stream) => {
                     const video = document.querySelector('video');
                     video.srcObject = stream;
