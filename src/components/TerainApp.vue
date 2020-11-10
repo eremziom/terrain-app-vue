@@ -44,7 +44,7 @@
                 <b-icon-camera class="icon" scale="2"></b-icon-camera>
             </button>
         </div>
-        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? (idDevice1.length === 14 ? correct : incorrect) : (idDevice1.length === 11 || idDevice1.length === 16 || idDevice1.length === 12 ? correct : incorrect), mainClass]" class="nrInput">
+        <div v-show="devices.tv || devices.intFon || devices.hdd == true" v-bind:class="[devices.hdd ? ((idDevice1.length === 14 || idDevice1.length === 8) ? correct : incorrect) : (idDevice1.length === 11 || idDevice1.length === 16 || idDevice1.length === 12 ? correct : incorrect), mainClass]" class="nrInput">
             <b-form-input id="ident1" v-model="idDevice1" v-bind:placeholder="devices.tv == true ? placeholderKarta : (devices.hdd == true ? placeholderDysk : placeholderInternet)" autocomplete="false" >
             </b-form-input>
             <button class="cameraButton" v-on:click="() => this.showCamera(1)">
@@ -110,7 +110,9 @@ export default {
                 this.codeType = "i2of5_reader";
             }   else if(this.devices.intFon === true){
                 this.codeType = "code_128_reader"
-            }   else this.codeType = "code_93_reader";
+            }   else {
+                this.codeType = "code_93_reader";
+            }
             await this.showLiveCamera();
         },
         numberCheck: async function(){
@@ -209,6 +211,7 @@ export default {
                 decoder: {
                     readers: [
                         self.codeType,
+                        "code_39_reader",
                     //   "code_93_reader",
                     //   "ean_8_reader",
                     //   "ean_reader",
@@ -300,7 +303,7 @@ export default {
                 }
                 else if(result.codeResult) {
                   this.codeNumber = result.codeResult.code;
-                    if(self.deviceInput === 1){
+                    if(self.deviceInput === 1 && (this.codeNumber.length === 14 || this.codeNumber.length === 8)){
                         self.idDevice1 =  this.codeNumber;
                         Quagga.stop()
                         self.cameraLoaded = false;
@@ -308,17 +311,18 @@ export default {
                         if(self.operatingSystem !== 'iOS'){
                             window.navigator.vibrate(200);
                         }
-                    }   else if (self.deviceInput === 2){
-                        self.idDevice2 = this.codeNumber;
-                        Quagga.stop()
-                        self.cameraLoaded = false;
-                        self.camera = false;
-                        if(self.operatingSystem !== 'iOS'){
-                            window.navigator.vibrate(200);
+                    }   else if (self.deviceInput === 2 && (this.codeNumber.length === 11
+                        && (this.codeNumber.toString()).charAt(0) === '0')){
+                            self.idDevice2 = this.codeNumber;
+                            Quagga.stop()
+                            self.cameraLoaded = false;
+                            self.camera = false;
+                            if(self.operatingSystem !== 'iOS'){
+                                window.navigator.vibrate(200);
+                            }
                         }
                     }
                 }
-              }
             });
         },
         postLogin: function(payload){
